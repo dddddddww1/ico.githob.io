@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>图标生成器</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        input[type="color"] {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            background-color: white;
+        }
+
+        button {
+            min-width: 120px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            background-color: #3498db;
+            color: white;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        #download {
+            background-color: #2ecc71;
+        }
+
+        #download:hover {
+            background-color: #27ae60;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .editor-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .editor-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .editor-tools {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        #editorCanvas {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+
+        #edit {
+            background-color: #9b59b6;
+        }
+
+        #edit:hover {
+            background-color: #8e44ad;
+        }
+
+        .size-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .size-selector::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .size-selector::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .size-selector::-webkit-scrollbar-thumb {
+            background: #bbb;
+            border-radius: 3px;
+        }
+
+        .size-selector::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .size-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 12px 15px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .size-option:hover {
+            background-color: #e9ecef;
+            border-color: #3498db;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .size-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #3498db;
+        }
+
+        .size-option span {
+            font-size: 0.95em;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .size-selector.show {
+            display: grid;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .toggle-sizes {
+            width: 100%;
+            padding: 10px 15px;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95em;
+            color: #555;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-sizes:hover {
+            border-color: #3498db;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .toggle-sizes.active {
+            border-color: #3498db;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+        }
+
+        .toggle-icon {
+            color: #3498db;
+            font-size: 1.1em;
+            transition: transform 0.3s ease;
+        }
+
+        .selected-sizes {
+            color: #666;
+        }
+
+        .size-selector-wrapper {
+            position: relative;
+        }
+
+        .size-selector {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 5px;
+            z-index: 100;
+            background-color: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-sizes.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .size-selector.show {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .ai-input-container {
+            grid-column: 1 / -1;
+        }
+
+        .ai-input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        #aiPrompt {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+        }
+
+        #aiPrompt:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .ai-generate-btn {
+            min-width: 120px;
+            background-color: #9b59b6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .ai-generate-btn:hover {
+            background-color: #8e44ad;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .ai-generate-btn.loading .loading-spinner {
+            display: block;
+        }
+
+        .ai-generate-btn.loading span {
+            opacity: 0.7;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .random-btn {
+            min-width: 120px;
+            background-color: #e67e22;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .random-btn:hover {
+            background-color: #d35400;
+        }
+
+        .random-btn.loading .loading-spinner {
+            display: block;
+        }
+
+        .random-btn.loading span {
+            opacity: 0.7;
+        }
+
+        .small-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            min-width: 90px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>简单图标生成器</h1>
+        <div class="controls">
+            <div class="control-group">
+                <label>
+                    <span>背景颜色</span>
+                    <input type="color" id="bgColor" value="#ffffff">
+                </label>
+                <label>
+                    <span>图形颜色</span>
+                    <input type="color" id="shapeColor" value="#000000">
+                </label>
+                <label>
+                    <span>选择图形</span>
+                    <select id="shape">
+                        <option value="circle">圆形</option>
+                        <option value="square">方形</option>
+                        <option value="triangle">三角形</option>
+                    </select>
+                </label>
+                <label class="size-selector-container">
+                    <span>图标尺寸</span>
+                    <div class="size-selector-wrapper">
+                        <button type="button" id="toggleSizes" class="toggle-sizes">
+                            <span class="selected-sizes">已选择: 16x16, 32x32, 48x48</span>
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                        <div class="size-selector">
+                            <label class="size-option">
+                                <input type="checkbox" name="iconSize" value="16" checked>
+                                <span>16x16</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="checkbox" name="iconSize" value="32" checked>
+                                <span>32x32</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="checkbox" name="iconSize" value="48" checked>
+                                <span>48x48</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="checkbox" name="iconSize" value="64">
+                                <span>64x64</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="checkbox" name="iconSize" value="96">
+                                <span>96x96</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="checkbox" name="iconSize" value="128">
+                                <span>128x128</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="checkbox" name="iconSize" value="192">
+                                <span>192x192</span>
+                            </label>
+                            <label class="size-option">
+                                <input type="checkbox" name="iconSize" value="256">
+                                <span>256x256</span>
+                            </label>
+                        </div>
+                    </div>
+                </label>
+                <div class="control-group">
+                    <label class="ai-input-container">
+                        <span>AI 生成图标</span>
+                        <div class="ai-input-wrapper">
+                            <input type="text" id="aiPrompt" placeholder="描述你想要的图标，例如：一个简单的蓝色房子图标" />
+                            <button id="generateAI" class="ai-generate-btn">
+                                <span>AI 生成</span>
+                                <div class="loading-spinner"></div>
+                            </button>
+                            <button id="randomIcon" class="random-btn small-btn">
+                                <span>随机生成</span>
+                                <div class="loading-spinner"></div>
+                            </button>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="generate">生成图标</button>
+                <button id="edit">编辑图标</button>
+                <button id="download">下载图标</button>
+            </div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="iconCanvas" width="128" height="128"></canvas>
+        </div>
+        <div class="editor-modal" id="editorModal">
+            <div class="editor-content">
+                <div class="editor-header">
+                    <h2>图标编辑器</h2>
+                    <button class="close-btn" id="closeEditor">&times;</button>
+                </div>
+                <div class="editor-tools">
+                    <label>
+                        <span>画笔颜色</span>
+                        <input type="color" id="brushColor" value="#000000">
+                    </label>
+                    <label>
+                        <span>画笔大小</span>
+                        <input type="range" id="brushSize" min="1" max="20" value="5">
+                    </label>
+                    <button id="clearCanvas">清空画布</button>
+                    <button id="saveEdit">保存</button>
+                </div>
+                <canvas id="editorCanvas" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+    <script src="icon-generator.js"></script>
+</body>
+</html> 
